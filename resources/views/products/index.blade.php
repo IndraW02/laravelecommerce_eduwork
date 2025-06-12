@@ -1,7 +1,8 @@
-@extends('layouts.app') <!-- Sesuaikan jika layout kamu berbeda -->
+@extends('layouts.app')
+
+@section('title', 'Daftar Produk')
 
 @section('content')
-<div class="container">
     <h1>Daftar Produk</h1>
 
     <a href="{{ route('product.create') }}" class="btn btn-primary mb-3">Tambah Produk Baru</a>
@@ -40,5 +41,4 @@
             </tbody>
         </table>
     @endif
-</div>
 @endsection
