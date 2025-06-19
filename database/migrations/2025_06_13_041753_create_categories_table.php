@@ -10,22 +10,21 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('orders', function (Blueprint $table) {
-        $table->id();
-        $table->string('customer_name');
-        $table->string('customer_email');
-        $table->decimal('total', 10, 2);
-        $table->timestamps();
-    });
-}
+    {
+Schema::create('categories', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');               // nama kategori
+    $table->text('description')->nullable(); // opsional: deskripsi kategori
+    $table->timestamps();
+});
 
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('categories');
     }
 };

@@ -3,94 +3,89 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Cart;
+use App\Models\Product;
 
 class CartController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar isi keranjang milik user yang login.
      */
     public function index()
     {
-        $cart = session('cart', []);
-        return view('cart', compact('cart'));
+        $user = Auth::user();
+        $cart = Cart::with('product')
+                    ->where('user_id', $user->id)
+                    ->get();
+
+        return view('carts.index', compact('cart')); // Perbaikan view path
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Menambahkan produk ke dalam keranjang.
      */
     public function store(Request $request)
     {
-        $cart = session()->get('cart', []);
+        $user = Auth::user();
 
-        $id = $request->id;
-        $cart[$id] = [
-            'name' => $request->name,
-            'price' => $request->price,
-            'quantity' => ($cart[$id]['quantity'] ?? 0) + 1
-        ];
+        $productId = $request->id;
+        $product = Product::findOrFail($productId); // validasi produk
 
-        session(['cart' => $cart]);
+        // Cek jika produk sudah ada di keranjang
+        $cartItem = Cart::where('user_id', $user->id)
+                        ->where('product_id', $productId)
+                        ->first();
+
+        if ($cartItem) {
+            $cartItem->quantity += 1;
+            $cartItem->save();
+        } else {
+            Cart::create([
+                'user_id' => $user->id,
+                'product_id' => $productId,
+                'quantity' => 1
+            ]);
+        }
 
         return redirect()->route('cart.index')->with('success', 'Produk ditambahkan ke keranjang.');
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * Mengupdate jumlah produk dalam keranjang.
      */
     public function update(Request $request, string $id)
-     {
-        $cart = session()->get('cart', []);
+    {
+        $cartItem = Cart::findOrFail($id);
 
-        if (isset($cart[$id])) {
-            $cart[$id]['quantity'] = $request->quantity;
-            session(['cart' => $cart]);
+        if ($cartItem->user_id === Auth::id()) {
+            $cartItem->quantity = $request->quantity;
+            $cartItem->save();
         }
 
         return redirect()->route('cart.index')->with('success', 'Jumlah produk diperbarui.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus produk dari keranjang.
      */
     public function destroy(string $id)
     {
-        $cart = session()->get('cart', []);
+        $cartItem = Cart::findOrFail($id);
 
-        if (isset($cart[$id])) {
-            unset($cart[$id]);
-            session(['cart' => $cart]);
+        if ($cartItem->user_id === Auth::id()) {
+            $cartItem->delete();
         }
 
         return redirect()->route('cart.index')->with('success', 'Produk dihapus dari keranjang.');
     }
 
-        public function clear()
+    /**
+     * Mengosongkan seluruh keranjang pengguna.
+     */
+    public function clear()
     {
-        session()->forget('cart');
+        Cart::where('user_id', Auth::id())->delete(); // ganti dari session ke DB
         return redirect()->route('cart.index')->with('success', 'Keranjang dikosongkan.');
     }
 }
